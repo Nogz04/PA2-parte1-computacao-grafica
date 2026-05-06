@@ -169,6 +169,15 @@ def draw_obj_model(scene, tex_id):
         glDisableClientState(GL_VERTEX_ARRAY)
 
 
+# Cria uma lista de exibição para o modelo OBJ (Otimização de Performance)
+def create_obj_display_list(scene, tex_id):
+    list_id = glGenLists(1) # Gera um ID para a lista
+    glNewList(list_id, GL_COMPILE) # Inicia a gravação dos comandos
+    draw_obj_model(scene, tex_id) # Executa o desenho (será gravado na GPU)
+    glEndList() # Finaliza a gravação
+    return list_id
+
+
 
 # Configura o OpenGL (textura, profundidade, iluminação)
 def init_opengl(display):
@@ -213,6 +222,9 @@ def main():
     # Carregar objeto
     scene = Wavefront('objetos/12221_Cat_v1_l3.obj', collect_faces=True, parse=True) # Carrega a geometria do gato
  
+    # CRIA A LISTA DE EXIBIÇÃO PARA O GATO (OTIMIZAÇÃO)
+    cat_list = create_obj_display_list(scene, cat_tex)
+
     #configuração do relógio para limitar FPS
     clock = pygame.time.Clock() # Cria relógio para controlar os frames por segundo (FPS)
     running = True # Variável de controle do laço principal
@@ -301,15 +313,17 @@ def main():
         glRotatef(180, 0, 1, 0) # Corrige a frente do gato
         glRotatef(-90, 1, 0, 0) # Deixa o gato em pé (ajuste comum em modelos OBJ)
         glScalef(0.02, 0.02, 0.02) # Encolhe o modelo (geralmente OBJs são gigantes)
-        draw_obj_model(scene, cat_tex) # Desenha o gato com a textura dele
+        glCallList(cat_list) # DESENHA O GATO USANDO A LISTA OTIMIZADA
         glPopMatrix() # Restaura a matriz
 
-        # PRINTS DE DEPURAÇÃO NO CONSOLE (SEUS PRINTS ORIGINAIS)
+        # PRINTS DE DEPURAÇÃO REMOVIDOS PARA MELHORAR PERFORMANCE
+        '''
         print("\n")
         print("yaw:", yaw, "pitch:", pitch, "camera:", (camera_x, camera_y, camera_z)  )
         print("\n")
         print("dir:", (dir_x, dir_y, dir_z))
         print("\n")
+        '''
         
         pygame.display.flip() # Troca os buffers (exibe o que foi desenhado na tela)
 
