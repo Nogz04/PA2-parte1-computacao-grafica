@@ -80,3 +80,7 @@ python Aula11_opengl_textura_camera_iluminacao.py
 *   **Pygame**: Janela e eventos.
 *   **PyOpenGL**: Renderização 3D.
 *   **Pillow (PIL)**: Processamento de texturas.
+
+---
+
+> AUTOR: Matheus Nogueira Albuquerque
