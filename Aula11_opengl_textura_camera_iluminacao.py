@@ -1,9 +1,4 @@
-# Importação das bibliotecas necessárias
-
-import pyglet
-pyglet.options['shadow_window'] = False
-pyglet.window.Window(visible=False)
-
+import ctypes
 import pygame
 from pygame.locals import *
 from OpenGL.GL import *
@@ -14,7 +9,6 @@ import math
 
 
 # Importação do módulo pywavefront para carregar e desenhar o modelo OBJ
-from pywavefront import Wavefront
 #from pywavefront.visualization import draw  # agora encontrará GL_V3F corretamente
 
 
@@ -115,6 +109,17 @@ def draw_textured_cube():
 
     glEnd()  # Finaliza o desenho
 
+# Função para desenhar um plano (chão ou parede) (Desafios 2 e 3)
+def draw_textured_plane(size=10, tiles=5):
+    glBegin(GL_QUADS)
+    glNormal3f(0, 1, 0) # Normal virada para cima
+    glTexCoord2f(0, 0); glVertex3f(-size, 0, -size)
+    glTexCoord2f(tiles, 0); glVertex3f(size, 0, -size)
+    glTexCoord2f(tiles, tiles); glVertex3f(size, 0, size)
+    glTexCoord2f(0, tiles); glVertex3f(-size, 0, size)
+    glEnd()
+
+
 
 # Lista de coordenadas 3D dos vértices do cubo
 # Cada vértice é representado por uma tupla (x, y, z)
@@ -150,48 +155,27 @@ cube_faces = [
 ]'''
 
 
-# usa glInterleavedArrays para desenhar tudo de uma vez (Otimizado para modelos OBJ)
-def draw_obj_model(scene, tex_id):
-    glEnable(GL_TEXTURE_2D) # Garante que texturas estão ligadas
-    glBindTexture(GL_TEXTURE_2D, tex_id) # Vincula a textura do modelo
-    for mat in scene.materials.values(): # Percorre os materiais do objeto OBJ
-        verts = mat.vertices  # Pega a lista de dados [x,y,z, nx,ny,nz, u,v]
-        count = len(verts) // 8 # Cada vértice tem 8 valores
-        array_type = (GLfloat * len(verts))(*verts) # Converte para o formato de array do C (usado pelo OpenGL)
-        glEnableClientState(GL_VERTEX_ARRAY) # Habilita o uso de arrays de vértices na GPU
-        glEnableClientState(GL_NORMAL_ARRAY) # Habilita o uso de vetores normais (para luz)
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY) # Habilita o uso de coordenadas de textura
-        # T2F_N3F_V3F indica que o array contém: Texture (2 floats), Normal (3 floats), Vertex (3 floats)
-        glInterleavedArrays(GL_T2F_N3F_V3F, 0, array_type) 
-        glDrawArrays(GL_TRIANGLES, 0, count) # Desenha todos os triângulos do modelo de uma vez
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY) # Desabilita os estados para não afetar outros desenhos
-        glDisableClientState(GL_NORMAL_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
-
-
-# Cria uma lista de exibição para o modelo OBJ (Otimização de Performance)
-def create_obj_display_list(scene, tex_id):
-    list_id = glGenLists(1) # Gera um ID para a lista
-    glNewList(list_id, GL_COMPILE) # Inicia a gravação dos comandos
-    draw_obj_model(scene, tex_id) # Executa o desenho (será gravado na GPU)
-    glEndList() # Finaliza a gravação
-    return list_id
-
 
 
 # Configura o OpenGL (textura, profundidade, iluminação)
 def init_opengl(display):
     glEnable(GL_DEPTH_TEST) # Habilita o Z-Buffer (objetos na frente escondem os de trás)
     glEnable(GL_TEXTURE_2D) # Habilita o uso de imagens 2D sobre polígonos
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (1.0, 1.0, 1.0, 1.0)) # Define uma luz global que ilumina tudo por igual
+    
+    # Luz Ambiente personalizada (Desafio 4)
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (0.2, 0.2, 0.4, 1.0)) # Tom azulado (luz fria/noturna)
+    
     glEnable(GL_LIGHTING) # Liga o sistema de cálculos de iluminação
     glEnable(GL_LIGHT0) # Liga a primeira fonte de luz (Luz 0)
-    glLightfv(GL_LIGHT0, GL_POSITION, (0, 5, 5, 1)) # Posiciona a luz no céu da cena (x=0, y=5, z=5)
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, (1.0, 1.0, 1.0, 1)) # Define a cor da luz que "bate e espalha" (branca)
-    glLightfv(GL_LIGHT0, GL_SPECULAR, (1.0, 1.0, 1.0, 1)) # Define a cor do brilho reflexivo (branca)
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, (1.0, 1.0, 1.0, 1.0)) # Define como o material reflete luz difusa
-    glMaterialfv(GL_FRONT, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0)) # Define como o material reflete o brilho especular
-    glMaterialf(GL_FRONT, GL_SHININESS, 80) # Define a intensidade do brilho (quanto maior, mais "metálico/polido")
+    
+    # Posição e Propriedades da Luz (Desafio 5)
+    glLightfv(GL_LIGHT0, GL_POSITION, (5.0, 10.0, 5.0, 1.0)) # Posição alta e lateral
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0)) # Luz branca direta
+    glLightfv(GL_LIGHT0, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0)) # Brilho reflexivo
+    
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, (1.0, 1.0, 1.0, 1.0))
+    glMaterialfv(GL_FRONT, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0))
+    glMaterialf(GL_FRONT, GL_SHININESS, 80)
     glMatrixMode(GL_PROJECTION) # Muda para a matriz de projeção (lente da câmera)
     glLoadIdentity() # Limpa a matriz de projeção
 
@@ -209,21 +193,29 @@ def main():
     pygame.init() # Inicializa o motor do Pygame
     display = (800, 600) # Define resolução da janela
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL) # Cria janela com suporte a Buffer Duplo e OpenGL
+    
+    # DIAGNÓSTICO: Verificando se o OpenGL carregou corretamente
+    print("--- DIAGNÓSTICO OPENGL ---")
+    try:
+        print(f"Vendor: {glGetString(GL_VENDOR).decode()}")
+        print(f"Renderer: {glGetString(GL_RENDERER).decode()}")
+        print(f"Version: {glGetString(GL_VERSION).decode()}")
+    except Exception as e:
+        print(f"Erro ao obter informações do OpenGL: {e}")
+    print("--------------------------")
+
     pygame.event.set_grab(True) # Prende o mouse dentro da janela do jogo
     pygame.mouse.set_visible(False) # Esconde o cursor do mouse (estilo FPS)
 
     init_opengl(display) # Chama as configurações do OpenGL definidas acima
 
-    #Carrega a textura da imagem "textura.jpg"
-    tex_id = load_texture("texturas/Onyx015_4K-PNG_Color.png")
+    # Carregamento das Texturas (Desafios 1, 2, 3 e 6)
+    tex_cubo   = load_texture("texturas/textura-cubo1/Onyx015_4K-PNG_Color.png")
+    tex_cubo2  = load_texture("texturas/textura-cubo2/Marble006_4K-PNG_Color.png")
+    tex_cubo3  = load_texture("texturas/textura-cubo3/Tiles074_4K-PNG_Color.png")
+    tex_grama  = load_texture("texturas/textura-chao-grama/Grass005_4K-PNG_Color.png")
+    tex_tijolo = load_texture("texturas/textura-parede-tijolo/Bricks104_4K-PNG_Color.png")
 
-    # Carrega a textura difusa do gato (ajuste o caminho!)
-    cat_tex  = load_texture("objetos/Cat_diffuse.jpg")
-    # Carregar objeto
-    scene = Wavefront('objetos/12221_Cat_v1_l3.obj', collect_faces=True, parse=True) # Carrega a geometria do gato
- 
-    # CRIA A LISTA DE EXIBIÇÃO PARA O GATO (OTIMIZAÇÃO)
-    cat_list = create_obj_display_list(scene, cat_tex)
 
     #configuração do relógio para limitar FPS
     clock = pygame.time.Clock() # Cria relógio para controlar os frames por segundo (FPS)
@@ -300,21 +292,45 @@ def main():
         # Limpa a tela e o buffer de profundidade para desenhar o novo frame
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         
-        # DESENHO DO CUBO ORIGINAL
-        glBindTexture(GL_TEXTURE_2D, tex_id) # Ativa a textura do cubo
-        glPushMatrix() # Salva a posição atual (origem)
-        glTranslatef(1.3, 0, 0) # Move o cubo 1.3 unidades para a direita
-        draw_textured_cube() # Chama a função que desenha os polígonos do cubo
-        glPopMatrix() # Volta para a posição salva (origem)
+        # 1. DESENHO DO CHÃO (Desafio 2)
+        glBindTexture(GL_TEXTURE_2D, tex_grama)
+        glPushMatrix()
+        glTranslatef(0, -1.0, 0) # Posiciona o chão levemente abaixo da origem
+        draw_textured_plane(size=20, tiles=10) # Desenha um plano grande
+        glPopMatrix()
+
+        # 2. DESENHO DAS PAREDES (Desafio 3 e 7)
+        glBindTexture(GL_TEXTURE_2D, tex_tijolo)
+        # Parede de Fundo
+        glPushMatrix()
+        glTranslatef(0, 4, -10)
+        glRotatef(90, 1, 0, 0) # Rotaciona para ficar vertical
+        draw_textured_plane(size=10, tiles=4)
+        glPopMatrix()
+        # Parede Lateral
+        glPushMatrix()
+        glTranslatef(-10, 4, 0)
+        glRotatef(90, 0, 0, 1) # Rotaciona para o lado
+        draw_textured_plane(size=10, tiles=4)
+        glPopMatrix()
+
+        # 3. DESENHO DO TOTEM DE CUBOS (Desafio 6)
+        totem_textures = [tex_cubo, tex_cubo2, tex_cubo3]
+        for i in range(3):
+            glBindTexture(GL_TEXTURE_2D, totem_textures[i]) # Cada cubo com sua textura
+            glPushMatrix()
+            glTranslatef(0, i * 2, 0) # Empilha um em cima do outro (y=0, 2, 4)
+            draw_textured_cube()
+            glPopMatrix()
+
+        # 4. DESENHO DO SEGUNDO CUBO (Desafio 1)
+        glBindTexture(GL_TEXTURE_2D, tex_tijolo) # Usando textura de tijolo para diferenciar
+        glPushMatrix()
+        glTranslatef(4, 0, -2) # Posicionado ao lado do totem
+        glRotatef(45, 0, 1, 0) # Uma leve rotação para estilo
+        draw_textured_cube()
+        glPopMatrix()
         
-        # DESENHO DO MODELO OBJ (GATO)
-        glPushMatrix() # Salva a posição atual
-        glTranslatef(0, 0, 0) # Mantém no centro (ou mude aqui para posicionar)
-        glRotatef(180, 0, 1, 0) # Corrige a frente do gato
-        glRotatef(-90, 1, 0, 0) # Deixa o gato em pé (ajuste comum em modelos OBJ)
-        glScalef(0.02, 0.02, 0.02) # Encolhe o modelo (geralmente OBJs são gigantes)
-        glCallList(cat_list) # DESENHA O GATO USANDO A LISTA OTIMIZADA
-        glPopMatrix() # Restaura a matriz
 
         # PRINTS DE DEPURAÇÃO REMOVIDOS PARA MELHORAR PERFORMANCE
         '''
