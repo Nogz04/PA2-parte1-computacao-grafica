@@ -2,6 +2,13 @@
 
 Este projeto consiste em uma cena 3D interativa desenvolvida em Python, utilizando OpenGL para renderização e Pygame para gerenciamento de janela e entradas. A cena inclui um chão de grama, paredes de tijolo e um totem de cubos com diferentes texturas, além de um sistema de câmera estilo FPS (First Person Shooter).
 
+## Pré-View
+
+<img width="783" height="587" alt="Captura de tela de 2026-05-10 17-47-40" src="https://github.com/user-attachments/assets/9d4a120e-7f79-4cae-9896-829e5f5f3578" />
+
+
+
+
 ## 🚀 Como Executar o Projeto
 
 ### 1. Pré-requisitos
