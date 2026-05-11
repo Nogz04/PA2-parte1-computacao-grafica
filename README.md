@@ -83,4 +83,6 @@ python Aula11_opengl_textura_camera_iluminacao.py
 
 ---
 
-> AUTOR: Matheus Nogueira Albuquerque
+## 👤 Autor
+
+Desenvolvido por **Matheus Nogueira** — UFN, Computação Gráfica, 05/2026
